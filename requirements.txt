@@ -6,6 +6,6 @@ seaborn
 PySoundFile
 sox
 soundfile
-numpy<2
+numpy
 accelerate>=0.26.0
 gradio
