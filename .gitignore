@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing / coverage
+.coverage
+.tox/
+nosetests.xml
+pytest_cache/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# PyCharm
+.idea/
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Secrets and environment variables
+.env
+*.env
+
+# MyPy
+.mypy_cache/
+
+# Cython
+*.c
+*.so
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+
+# Database
+*.sqlite3
+
+# Docker
+*.dockerignore
+
+# Ignore files related to specific tools
+pylint.log
+coverage.xml
+*.zip
+.*
+!/.gitignore
