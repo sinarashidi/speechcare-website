@@ -1,32 +1,37 @@
 import torch
 import gradio as gr
+import pandas as pd
 from replicate.tbnet import TBNet, Config
+
 
 def predict(audio, age):
     
-    config = Config()
-    config.seed = 133
-    config.bs = 4
-    config.epochs = 14
-    config.lr = 1e-6
-    config.hidden_size = 128
-    config.wd = 1e-3
-    config.integration = 16
-    config.num_labels = 3
-    config.txt_transformer_chp = config.MGTEBASE
-    config.speech_transformer_chp = config.mHuBERT
-    config.segment_size = 5
-    config.active_layers = 12
-    config.demography = 'age_bin'
-    config.demography_hidden_size = 128
-    config.max_num_segments = 7
+    # config = Config()
+    # config.seed = 133
+    # config.bs = 4
+    # config.epochs = 14
+    # config.lr = 1e-6
+    # config.hidden_size = 128
+    # config.wd = 1e-3
+    # config.integration = 16
+    # config.num_labels = 3
+    # config.txt_transformer_chp = config.MGTEBASE
+    # config.speech_transformer_chp = config.mHuBERT
+    # config.segment_size = 5
+    # config.active_layers = 12
+    # config.demography = 'age_bin'
+    # config.demography_hidden_size = 128
+    # config.max_num_segments = 7
 
-    tbnet_model = TBNet(config)
-    tbnet_model.load_state_dict(torch.load("tbnet-best.pt"))
-    tbnet_model.eval()
+    # tbnet_model = TBNet(config)
+    # tbnet_model.load_state_dict(torch.load("tbnet-best.pt"))
+    # tbnet_model.eval()
     
-    predictions = tbnet_model.inference(audio, age, config)
-    return predictions
+    # predictions = tbnet_model.inference(audio, age, config)
+    # return predictions
+    probs = [0.5, 0.3, 0.2]
+    output = pd.DataFrame(probs, columns=["Probability"], index=["Healthy", "MCI", "ADRD"])
+    return output.idxmax(), output
 
 
 with gr.Blocks() as demo:
@@ -46,25 +51,30 @@ with gr.Blocks() as demo:
             predict_button = gr.Button("Predict")
 
         with gr.Column():
-            output_text = gr.Markdown(label="Prediction Result", container=True, value="## Prediction Results")
-            
+            output_text = gr.Markdown("## Prediction Results")
+            with gr.Group():
+                output_barChart = gr.BarPlot(
+                    # label="Prediction Probabilities",
+                    x="Condition", 
+                    y="Probability",
+                    orientation="h"
+                )
     # Link the button to the prediction function
     def update_ui(audio, age):
-        if audio is None or age == "":
-            return "Please provide both audio and age."
-
+        if not audio or age.strip() == "":
+            # Return an empty BarPlot in case of missing input
+            empty_df = pd.DataFrame({"Condition": [], "Probability": []})
+            return gr.BarPlot(value=empty_df, x="Condition", y="Probability", orientation="h")
+        
         try:
-            # Get predictions from the model
             label, probabilities = predict(audio, int(age))
-            labels = {0: "Healthy", 1: "MCI", 2: "ADRD"}
-            predicted_label = labels[label]
-            max_probability = max(probabilities) * 100  # Convert to percentage
-            formatted_output = f"<h2>Predicted Label: {predicted_label}<br>Probability: {max_probability:.2f}%</h2>"
-            return formatted_output
+            df = probabilities.reset_index().rename(columns={"index": "Condition"})
+            return gr.BarPlot(value=df, x="Condition", y="Probability", orientation="h")
         except Exception as e:
-            return f"Error: {str(e)}"
-
-    predict_button.click(fn=update_ui, inputs=[audio_input, age], outputs=output_text)
+            # Return an error message as a Markdown component
+            return gr.Markdown(f"Error: {str(e)}")
+        
+    predict_button.click(fn=update_ui, inputs=[audio_input, age], outputs=output_barChart)
 
 # Launch the Gradio app
-demo.launch(share=True)
+demo.launch()

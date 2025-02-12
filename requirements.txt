@@ -8,4 +8,5 @@ sox
 soundfile
 numpy
 accelerate>=0.26.0
-gradio
+gradio>=5.16.0
+pandas
