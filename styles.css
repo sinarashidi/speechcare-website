@@ -1,0 +1,20 @@
+body {
+    background-color: #e2e2e2;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.spacer {
+    margin-top: 10px;
+}
+
+.output-message {
+    font-size: 20px;
+    text-align: center;
+    background-color: transparent;
+}
+
+.custom-group {
+    background-color: transparent !important; /* No background color */
+    padding: 0 !important; /* Remove padding */
+    border: none !important; /* Remove any borders */
+}
