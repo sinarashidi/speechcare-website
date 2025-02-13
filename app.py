@@ -34,8 +34,9 @@ def predict(audio, age):
     return output.idxmax(), output
 
 
-with gr.Blocks() as demo:
-    gr.Markdown("# Cognitive Impairment Prediction from Speech")
+with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
+    gr.Markdown("# SpeechCare")
+    gr.Markdown(" ## Cognitive Impairment Detection from Speech")
 
     with gr.Row():
         with gr.Column():
@@ -43,7 +44,7 @@ with gr.Blocks() as demo:
             # Audio input (mic or file upload)
             audio_input = gr.Audio(
                 label="Upload or Record Audio",
-                type="filepath",  # Using 'numpy' to handle both mic and file uploads
+                type="filepath",
                 sources=['microphone', 'upload'],
                 max_length=31,
             )
@@ -51,30 +52,42 @@ with gr.Blocks() as demo:
             predict_button = gr.Button("Predict")
 
         with gr.Column():
-            output_text = gr.Markdown("## Prediction Results")
-            with gr.Group():
-                output_barChart = gr.BarPlot(
-                    # label="Prediction Probabilities",
-                    x="Condition", 
-                    y="Probability",
-                    orientation="h"
-                )
+            output_banner = gr.Markdown("## Prediction Results", visible=False)
+            output_barChart = gr.BarPlot(
+                x="Label", 
+                y="Probability",
+                sort=None,
+                orientation="h",
+                visible=False,
+            )
+            output_message_area = gr.HTML("", elem_classes=["output-message"], visible=False)
     # Link the button to the prediction function
     def update_ui(audio, age):
         if not audio or age.strip() == "":
             # Return an empty BarPlot in case of missing input
-            empty_df = pd.DataFrame({"Condition": [], "Probability": []})
-            return gr.BarPlot(value=empty_df, x="Condition", y="Probability", orientation="h")
+            empty_df = pd.DataFrame({"Label": [], "Probability": []})
+            return gr.BarPlot(value=empty_df, x="Label", y="Probability")
         
         try:
             label, probabilities = predict(audio, int(age))
-            df = probabilities.reset_index().rename(columns={"index": "Condition"})
-            return gr.BarPlot(value=df, x="Condition", y="Probability", orientation="h")
+            df = probabilities.reset_index().rename(columns={"index": "Label"})
+            # Sum of the probabilities of MCI and ADRD
+            cog_imp_percent = df.loc[1:, "Probability"].sum() * 100
+            output_message = f"You are {cog_imp_percent}% in risk of cognitive impairment."
+            return (
+                gr.update(visible=True),
+                gr.BarPlot(value=df, x="Label", y="Probability", sort=["Healthy", "MCI", "ADRD"], orientation="h", visible=True),
+                gr.HTML(output_message, visible=True)
+            )
         except Exception as e:
             # Return an error message as a Markdown component
             return gr.Markdown(f"Error: {str(e)}")
         
-    predict_button.click(fn=update_ui, inputs=[audio_input, age], outputs=output_barChart)
+    predict_button.click(
+        fn=update_ui, 
+        inputs=[audio_input, age], 
+        outputs=[output_banner, output_barChart, output_message_area]
+    )
 
 # Launch the Gradio app
-demo.launch()
+demo.launch(debug=True)
