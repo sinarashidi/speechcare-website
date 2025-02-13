@@ -1,5 +1,6 @@
 import os
-from tqdm import tqdm
+import shap
+import numpy as np
 import torch
 import torch.nn as nn
 import torchaudio
@@ -9,6 +10,7 @@ from transformers import (AutoModel,
                           AutoTokenizer, 
                           AutoModelForSpeechSeq2Seq, 
                           AutoProcessor, pipeline)
+from .shap_visualization import text
 
 
 class Config():
@@ -59,6 +61,10 @@ class TBNet(nn.Module):
     def __init__(self, config):
         super(TBNet, self).__init__()
         # set_seed(config.seed)
+        self.predicted_label = None
+        self.transcription = None
+        
+        self.tokenizer = AutoTokenizer.from_pretrained(config.txt_transformer_chp, trust_remote_code=True)
         self.speech_transformer = AutoModel.from_pretrained(config.speech_transformer_chp)
         self.txt_transformer = AutoModel.from_pretrained(config.txt_transformer_chp, trust_remote_code=True)
         speech_embedding_dim = self.speech_transformer.config.hidden_size
@@ -89,13 +95,13 @@ class TBNet(nn.Module):
         self.weight_gate = GatingNetwork((config.hidden_size * 2) + config.demography_hidden_size)
 
         # Initialize Whisper pipeline
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda:0" if torch.cuda.is_available() else "cpu"
         torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
         model_id = config.WHISPER
         whisper_model = AutoModelForSpeechSeq2Seq.from_pretrained(
             model_id, torch_dtype=torch_dtype, low_cpu_mem_usage=True, use_safetensors=True
         )
-        whisper_model.to(device)
+        whisper_model.to(self.device)
         processor = AutoProcessor.from_pretrained(model_id)
         self.whisper_pipeline = pipeline(
             "automatic-speech-recognition",
@@ -103,8 +109,13 @@ class TBNet(nn.Module):
             tokenizer=processor.tokenizer,
             feature_extractor=processor.feature_extractor,
             torch_dtype=torch_dtype,
-            device=device,
+            device=self.device,
         )
+        
+        self.labels = ['control', 'mci', 'adrd']
+        self.label_map = {'control':0, 'mci':1, 'adrd':2}
+        self.label_rev_map = {0:'control', 1:'mci', 2:'adrd'}
+        self.text_explainer = shap.Explainer(self.calculate_shap_values, self.tokenizer, output_names=self.labels, hierarchical_values=True)
 
     def calculate_num_segments(self, audio_duration, segment_length, overlap, min_acceptable):
         """
@@ -271,8 +282,8 @@ class TBNet(nn.Module):
         # Step 1: Transcribe the audio file using Whisper
         print("Transcribing audio...")
         transcription_result = self.whisper_pipeline(audio_path)
-        transcription = transcription_result["text"]
-        print(f"Transcription: {transcription}")
+        self.transcription = transcription_result["text"]
+        print(f"Transcription: {self.transcription}")
 
         # Step 2: Preprocess the audio file into segments
         print("Preprocessing audio...")
@@ -280,8 +291,8 @@ class TBNet(nn.Module):
 
         # Step 3: Tokenize the transcription
         print("Tokenizing transcription...")
-        tokenizer = AutoTokenizer.from_pretrained(config.txt_transformer_chp, trust_remote_code=True)
-        tokenized_text = tokenizer(transcription, return_tensors="pt", padding=True, truncation=True)
+        # tokenizer = AutoTokenizer.from_pretrained(config.txt_transformer_chp, trust_remote_code=True)
+        tokenized_text = self.tokenizer(self.transcription, return_tensors="pt", padding=True, truncation=True)
         input_ids = tokenized_text["input_ids"]  # Shape: [1, max_seq_length]
         attention_mask = tokenized_text["attention_mask"]  # Shape: [1, max_seq_length]
 
@@ -302,5 +313,68 @@ class TBNet(nn.Module):
 
         # Step 7: Get the predicted label
         predicted_label = torch.argmax(logits, dim=1).item()
+        self.predicted_label = predicted_label
 
         return predicted_label, probabilities[0].tolist()
+    
+    
+    def text_only_classification(self, input_ids, attention_mask):
+        print('text only classifier in...')
+        txt_embeddings = self.txt_transformer(input_ids=input_ids, attention_mask=attention_mask)
+        print('transformer - done')
+        txt_cls = txt_embeddings.last_hidden_state[:, 0, :]
+        print('cls - done')
+        txt_x = self.txt_head(txt_cls)  
+        print('head - done')
+        txt_out = self.txt_classifier(txt_x)
+        print('classifier - done')
+        print('text only classifier out...')
+        return txt_out
+    
+    def calculate_shap_values(self, text):
+        device = next(self.parameters()).device
+        # Tokenize and encode the input
+        input_ids = torch.tensor([self.tokenizer.encode(v, padding="max_length", max_length=300, truncation=True) for v in text]).to(device)
+        attention_masks = (input_ids != 0).type(torch.int64).to(device)
+        # Pass through the model
+        # outputs = self.text_only_classification(input_ids, attention_masks).detach().cpu().numpy()
+        txt_embeddings = self.txt_transformer(input_ids=input_ids, attention_mask=attention_masks)
+        txt_cls = txt_embeddings.last_hidden_state[:, 0, :]
+        txt_x = self.txt_head(txt_cls)  
+        txt_out = self.txt_classifier(txt_x)
+        outputs = txt_out.detach().cpu().numpy()
+
+        # Apply softmax to get probabilities
+        scores = (np.exp(outputs).T / np.exp(outputs).sum(-1)).T
+
+        # Define a helper function to calculate logit with special handling
+        def safe_logit(p):
+            with np.errstate(divide='ignore', invalid='ignore'):  # Suppress warnings for divide by zero or invalid ops
+                logit = np.log(p / (1 - p))
+                logit[p == 0] = -np.inf  # logit(0) = -inf
+                logit[p == 1] = np.inf   # logit(1) = inf
+                logit[(p < 0) | (p > 1)] = np.nan  # logit(p) is nan for p < 0 or p > 1
+            return logit
+
+        # Calculate the new scores based on the specified criteria
+        p_0, p_1, p_2 = scores[:, 0], scores[:, 1], scores[:, 2]
+
+        score_0 = safe_logit(p_0)
+        p_1_p_2_sum = p_1 + p_2
+        score_1 = safe_logit(p_1_p_2_sum)
+        score_2 = score_1  # Same as score_1 per your criteria
+
+        # Combine the scores into a single array
+        new_scores = np.stack([score_0, score_1, score_2], axis=-1)
+
+        return new_scores
+    
+    def illustrate_shap_values(self):
+        print('Running shap values...')
+        input_text = [str(self.transcription)]
+        print('input text:',input_text)
+        
+        shap_values = self.text_explainer(input_text)
+        print('Values explained...')
+        shap_html_code = text(shap_values[:,:,self.predicted_label], display=False)
+        return shap_html_code

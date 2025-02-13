@@ -18,3 +18,11 @@ body {
     padding: 0 !important; /* Remove padding */
     border: none !important; /* Remove any borders */
 }
+
+.horizontal-line {
+    border: none; /* Remove default border */
+    height: 2px; /* Thickness of the line */
+    background-color: #dddddd; /* Blue color */
+    /* margin: 10px auto; Add vertical spacing and center horizontally */
+    width: 100%; /* Set the width to 90% of the container */
+}

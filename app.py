@@ -61,6 +61,8 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
                 visible=False,
             )
             output_message_area = gr.HTML("", elem_classes=["output-message"], visible=False)
+    gr.HTML('<div class="horizontal-line"></div>')
+        
     # Link the button to the prediction function
     def update_ui(audio, age):
         if not audio or age.strip() == "":
@@ -90,4 +92,4 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
     )
 
 # Launch the Gradio app
-demo.launch(debug=True)
+demo.launch(share=True)

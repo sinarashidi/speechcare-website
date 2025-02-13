@@ -10,3 +10,5 @@ numpy
 accelerate>=0.26.0
 gradio>=5.16.0
 pandas
+shap
+praat-parselmouth
