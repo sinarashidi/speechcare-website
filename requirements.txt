@@ -12,3 +12,4 @@ gradio>=5.16.0
 pandas
 shap
 praat-parselmouth
+librosa

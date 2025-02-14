@@ -25,11 +25,15 @@ build:
     - "soundfile"
     - "numpy"
     - "accelerate"
+    - "shap"
+    - "gdown"
+    - "praat-parselmouth"
+    - "pandas"
+    - "librosa"
 
   # commands run after the environment is setup
   run:
     - "echo env is ready!"
-    - "pip install gdown"
     - "gdown 1Cixa_7eunClHa35fWF6vxrkmwb87IZhz" # Model checkpoint file
 
 
