@@ -2,6 +2,7 @@ import torch
 import gradio as gr
 import pandas as pd
 from replicate.tbnet import TBNet, Config
+from time import sleep
 
 
 def predict(audio, age):
@@ -29,10 +30,21 @@ def predict(audio, age):
     
     # predictions = tbnet_model.inference(audio, age, config)
     # return predictions
-    probs = [0.5, 0.3, 0.2]
+    sleep(5)
+    probs = [0.55454, 0.36336, 0.25776]
     output = pd.DataFrame(probs, columns=["Probability"], index=["Healthy", "MCI", "ADRD"])
     return output.idxmax(), output
 
+
+
+def show_loading():
+    return (
+        gr.update(visible=False),  # Hide output_banner
+        gr.update(visible=False),  # Hide output_barChart
+        gr.update(visible=False),  # Hide output_message_area
+        gr.update(visible=True)
+    )
+    
 
 with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
     gr.Markdown("# SpeechCare")
@@ -61,8 +73,14 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
                 visible=False,
             )
             output_message_area = gr.HTML("", elem_classes=["output-message"], visible=False)
+            
+            loading_indicator = gr.Image("images/loading.gif", visible=False, show_download_button=False, show_fullscreen_button=False)  # Loading GIF
     gr.HTML('<div class="horizontal-line"></div>')
         
+    text_expl_btn = gr.Button("Text Explanability", elem_classes=["text-expl-btn"])
+    
+        
+    text_explanation = gr.HTML("", visible=False)
     # Link the button to the prediction function
     def update_ui(audio, age):
         if not audio or age.strip() == "":
@@ -75,21 +93,29 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
             df = probabilities.reset_index().rename(columns={"index": "Label"})
             # Sum of the probabilities of MCI and ADRD
             cog_imp_percent = df.loc[1:, "Probability"].sum() * 100
-            output_message = f"You are {cog_imp_percent}% in risk of cognitive impairment."
+            output_message = f"You are {cog_imp_percent:.2f}% in risk of cognitive impairment."
             return (
                 gr.update(visible=True),
                 gr.BarPlot(value=df, x="Label", y="Probability", sort=["Healthy", "MCI", "ADRD"], orientation="h", visible=True),
-                gr.HTML(output_message, visible=True)
+                gr.HTML(output_message, visible=True),
+                gr.update(visible=False)
             )
         except Exception as e:
             # Return an error message as a Markdown component
             return gr.Markdown(f"Error: {str(e)}")
         
+        
+    # def show_text_expl():
+    #     text_explanation = tbnet_model.illustrate_shap_values()
     predict_button.click(
-        fn=update_ui, 
-        inputs=[audio_input, age], 
-        outputs=[output_banner, output_barChart, output_message_area]
+        fn=show_loading,  # Show loading screen
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
+        queue=False  # Ensure this step is executed immediately
+    ).then(
+        fn=update_ui,  # Run the prediction and update the UI
+        inputs=[audio_input, age],
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator]
     )
-
+    # text_expl_btn.click
 # Launch the Gradio app
 demo.launch(share=True)

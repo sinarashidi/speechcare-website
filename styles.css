@@ -20,9 +20,17 @@ body {
 }
 
 .horizontal-line {
-    border: none; /* Remove default border */
-    height: 2px; /* Thickness of the line */
-    background-color: #dddddd; /* Blue color */
-    /* margin: 10px auto; Add vertical spacing and center horizontally */
-    width: 100%; /* Set the width to 90% of the container */
+    border: none;
+    height: 2px;
+    background-color: #dddddd;
+    /* margin: 10px auto; */
+    width: 100%;
+}
+
+.text-expl-btn {
+    max-width: 20%;
+}
+
+.loading-text {
+    font-size: 10px;
 }
