@@ -5,7 +5,7 @@ from gradio_utils import *
 replicate_repo_path = setup_env("config/config.yaml")
 
 # Main Page Layout
-with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
+with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo:
     gr.HTML("SpeechCare", elem_classes=["page-title"], padding=False)
     gr.HTML("Cognitive Impairment Detection from Speech + Explainability in both Text and Speech Modalities", elem_classes=["page-subtitle"], padding=False)
     gr.HTML('<div class="page-header-line"></div>', padding=False)
@@ -80,7 +80,7 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
         with gr.Column(scale=1):
             speech_expl_btn = gr.Button("Calculate Speech SHAP Results", elem_classes=["speech-expl-btn"])
         with gr.Column(scale=3):
-            speech_explanation = gr.Plot(visible=False)
+            speech_explanation = gr.Image(visible=False)
             speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False)
         
     predict_button.click(

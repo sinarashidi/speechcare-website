@@ -46,34 +46,26 @@ def get_text_explanations(audio, age, repo_path):
         gr.HTML(text_shap_html, visible=True),
         gr.update(visible=False), 
     )
-
     
-def plot_image_from_url(url):
-    response = requests.get(url)
-    response.raise_for_status()  # Ensure we got a valid response
-    img = Image.open(BytesIO(response.content))
 
-    fig, ax = plt.subplots()
-    ax.imshow(img)
-    ax.axis("off")
-    plt.close(fig)
-    return fig
-
-    
 def get_speech_explanations(audio, age, repo_path):
     with open(audio, "rb") as audio_file:
         image_url = replicate.run(
-        repo_path,
-        input={
-            "age": int(age),
-            "mode": "explain_speech",
-            "audio": audio_file,
+            repo_path,
+            input={
+                "age": int(age),
+                "mode": "explain_speech",
+                "audio": audio_file,
             }
         )
-    image = plot_image_from_url(image_url)
+    # Download the image from the URL
+    response = requests.get(image_url)
+    response.raise_for_status()
+    img = Image.open(BytesIO(response.content))
+    # Return the image and update the loading indicator
     return (
-        gr.update(image, visible=True),
-        gr.update(visible=False), 
+        gr.update(img, visible=True), 
+        gr.update(visible=False)
     )
 
 
