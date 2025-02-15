@@ -32,8 +32,15 @@ class Predictor(BasePredictor):
     def predict(self, 
             audio: Path = Input(description="Input Speech"),
             age: float = Input(description="Age"),
-            ) -> Path:
+            mode: str = Input(description="Mode")
+            ) -> Path | str:
         """Run a single prediction on the model"""
-        
-        predictions = self.net.inference(audio, age, self.config)
-        return predictions
+        if mode == "inference":
+            predictions = self.net.inference(audio, age, self.config)
+            return predictions
+        elif mode == "explain_text":
+            predictions = self.net.inference(audio, age, self.config)
+            return self.net.get_text_shap_results()
+        elif mode == "explain_speech":
+            output = self.net.get_speech_shap_results(audio, age, self.config)
+            return Path(output)

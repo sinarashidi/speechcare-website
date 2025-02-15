@@ -6,11 +6,14 @@ import torch.nn as nn
 import torchaudio
 import torchaudio.transforms as transforms
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 from transformers import (AutoModel, 
                           AutoTokenizer, 
                           AutoModelForSpeechSeq2Seq, 
                           AutoProcessor, pipeline)
 from shap_visualization import text
+from speech_shap_visualization import visualize_shap_spectrogram, frequency_shannon_entropy
 
 
 class Config():
@@ -115,7 +118,7 @@ class TBNet(nn.Module):
         self.labels = ['control', 'mci', 'adrd']
         self.label_map = {'control':0, 'mci':1, 'adrd':2}
         self.label_rev_map = {0:'control', 1:'mci', 2:'adrd'}
-        self.text_explainer = shap.Explainer(self.calculate_shap_values, self.tokenizer, output_names=self.labels, hierarchical_values=True)
+        self.text_explainer = shap.Explainer(self.calculate_text_shap_values, self.tokenizer, output_names=self.labels, hierarchical_values=True)
 
         
     def calculate_num_segments(self, audio_duration, segment_length, overlap, min_acceptable):
@@ -332,7 +335,7 @@ class TBNet(nn.Module):
         print('text only classifier out...')
         return txt_out
     
-    def calculate_shap_values(self, text):
+    def calculate_text_shap_values(self, text):
         device = next(self.parameters()).device
         # Tokenize and encode the input
         input_ids = torch.tensor([self.tokenizer.encode(v, padding="max_length", max_length=300, truncation=True) for v in text]).to(device)
@@ -370,7 +373,7 @@ class TBNet(nn.Module):
 
         return new_scores
     
-    def illustrate_shap_values(self):
+    def get_text_shap_results(self):
         print('Running shap values...')
         input_text = [str(self.transcription)]
         print('input text:',input_text)
@@ -515,3 +518,65 @@ class TBNet(nn.Module):
             "segments_tensor": segments_tensor.cpu().numpy(),
             "predictions": predictions
         }
+
+    def get_speech_shap_results(
+        self,
+        audio_path,
+        demography_info,
+        config,
+        frame_duration=0.3,
+        formants_to_plot=["F0", "F3"],
+        segment_length=5,
+        overlap=0.2,
+        target_sr=16000,
+        baseline_type='zeros'
+    ):
+        """
+        Calculates SHAP values for the given audio file, creates a figure with a spectrogram
+        and frequency Shannon entropy subplots, saves the figure to fig_save_path, and returns the figure.
+        """
+        audio_label = self.inference(audio_path, demography_info, config)[0]
+
+        shap_results = self.calculate_speech_shap_values(
+            audio_path,
+            segment_length=segment_length,
+            overlap=overlap,
+            target_sr=target_sr,
+            baseline_type=baseline_type,
+        )
+        shap_values = shap_results["shap_values"]
+        shap_values_aggregated = shap_results["shap_values_aggregated"]
+        predictions = shap_results["predictions"]
+
+        # Create the figure and grid
+        fig = plt.figure(figsize=(20, 5.5))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[4, 1.5])
+
+        # Spectrogram subplot
+        ax0 = plt.subplot(gs[0])
+        _ = visualize_shap_spectrogram(
+            audio_path,
+            shap_values,
+            audio_label,
+            sr=target_sr,
+            segment_length=segment_length,
+            overlap=overlap,
+            merge_frame_duration=frame_duration,
+            formants_to_plot=formants_to_plot,
+            fig_save_path=None,
+            ax=ax0
+        )
+
+        # Frequency Shannon Entropy subplot
+        ax1 = plt.subplot(gs[1])
+        _ = frequency_shannon_entropy(
+            audio_path,
+            ax=ax1,
+            smooth_window=50
+        )
+
+        plt.tight_layout()
+        # Ensure the directory exists and save the figure
+        fig_save_path = f"speech_shap_{os.path.basename(audio_path)}.png"
+        plt.savefig(fig_save_path, dpi=600, bbox_inches="tight", transparent=True)
+        return fig_save_path

@@ -1,48 +1,15 @@
-# import torch
-# import gradio as gr
-# import pandas as pd
-# from replicate.tbnet import TBNet, Config
-
-
-# config = Config()
-# config.seed = 133
-# config.bs = 4
-# config.epochs = 14
-# config.lr = 1e-6
-# config.hidden_size = 128
-# config.wd = 1e-3
-# config.integration = 16
-# config.num_labels = 3
-# config.txt_transformer_chp = config.MGTEBASE
-# config.speech_transformer_chp = config.mHuBERT
-# config.segment_size = 5
-# config.active_layers = 12
-# config.demography = 'age_bin'
-# config.demography_hidden_size = 128
-# config.max_num_segments = 7
-
-# tbnet_model = TBNet(config)
-# tbnet_model.load_state_dict(torch.load("tbnet-best.pt"))
-# tbnet_model.eval()
-
-
-# age = 63
-# audio = '/workspace/speechcare-website/Datasets/LPF_test_audios/amhc.wav'
-# # results = tbnet_model.inference(audio, age, config)
-# # print(tbnet_model.illustrate_shap_values())
-# tbnet_model.calculate_and_visualize_speech_shap(audio, 'result.png')
-
 import replicate
+import matplotlib.pyplot as plt
+from time import perf_counter
 
 with open("amhc.wav", "rb") as audio_file:
-    # Pass the file object directly to the Replicate API
     output = replicate.run(
-        "neurotechanalytics/speechcare:ad35ccb47bb9999c698d38f19929266824a686dec624f4eef60e93f4a6eccb9e",
-        input={
-            'audio': audio_file,  # File object
-            'age': 63             # Age input
+    "neurotechanalytics/speechcare:a9468353cb7e9c47ee573e3212b4427fdab1cef1cc170920e6ed0125dd7c26ab",
+    input={
+        "age": 63,
+        "mode": "explain_speech",
+        "audio": audio_file,
         }
     )
-    print(output)
-    
-    
+
+plt.imshow(output)
