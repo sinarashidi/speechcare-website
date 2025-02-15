@@ -113,4 +113,4 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
     )
     
 # Launch the Gradio app
-demo.launch(share=True)
+demo.launch(share=False)
