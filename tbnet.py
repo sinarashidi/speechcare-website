@@ -3,7 +3,6 @@ import shap
 import numpy as np
 import torch
 import torch.nn as nn
-import librosa
 import torchaudio
 import torchaudio.transforms as transforms
 import torch.nn.functional as F
@@ -118,6 +117,7 @@ class TBNet(nn.Module):
         self.label_rev_map = {0:'control', 1:'mci', 2:'adrd'}
         self.text_explainer = shap.Explainer(self.calculate_shap_values, self.tokenizer, output_names=self.labels, hierarchical_values=True)
 
+        
     def calculate_num_segments(self, audio_duration, segment_length, overlap, min_acceptable):
         """
         Calculate the maximum number of segments for a given audio duration.
@@ -282,8 +282,7 @@ class TBNet(nn.Module):
         """
         # Step 1: Transcribe the audio file using Whisper
         print("Transcribing audio...")
-        audio_numpy, _ = librosa.load(audio_path)
-        transcription_result = self.whisper_pipeline(audio_numpy)
+        transcription_result = self.whisper_pipeline(audio_path)
         self.transcription = transcription_result["text"]
         print(f"Transcription: {self.transcription}")
 
@@ -380,3 +379,139 @@ class TBNet(nn.Module):
         print('Values explained...')
         shap_html_code = text(shap_values[:,:,self.predicted_label], display=False)
         return shap_html_code
+    
+    def speech_only_forward(self, input_values, return_embeddings=False):
+        """
+        Forward method for TBNet model.
+        Ensures that the input tensor has the correct shape: [batch_size, num_segments, seq_length].
+        """
+        if input_values.dim() == 2:
+            # Reshape to [batch_size, num_segments, seq_length]
+            batch_size = 1
+            num_segments, seq_length = input_values.size()
+            input_values = input_values.view(batch_size, num_segments, seq_length)
+
+        batch_size, num_segments, seq_length = input_values.size()
+
+        input_values = input_values.view(batch_size * num_segments, seq_length)
+        transformer_output = self.speech_transformer(input_values)
+        output_embeddings = transformer_output.last_hidden_state
+
+        output_embeddings = output_embeddings.view(batch_size, num_segments, -1, output_embeddings.size(-1))
+        output_embeddings = output_embeddings.view(batch_size, num_segments * output_embeddings.size(2), -1)
+
+        cls_tokens = self.cls_token.expand(batch_size, -1, -1)
+        embeddings = torch.cat((cls_tokens, output_embeddings), dim=1)
+        embeddings += self.positional_encoding[:, :embeddings.size(1), :]
+
+        for layer in self.layers:
+            embeddings = layer(embeddings)
+
+        cls = embeddings[:, 0, :]
+        x = self.speech_head(cls)
+        x = self.speech_classifier(x)
+        
+        if return_embeddings:
+            return x, transformer_output.last_hidden_state
+        return x
+    
+    def speech_only_inference(self, audio_path, segment_length=5, overlap=0.2, target_sr=16000, device='cuda'):
+        """
+        Inference method for the TBNet model. Processes an audio file, splits it, and returns predictions and embeddings.
+        """
+        self.eval()
+        self.to(self.device)
+
+        # Load and resample audio
+        audio, sr = torchaudio.load(audio_path)
+        resampler = transforms.Resample(orig_freq=sr, new_freq=target_sr)
+        audio = resampler(audio)
+
+        # Convert to mono
+        if audio.size(0) > 1:
+            audio = torch.mean(audio, dim=0)
+        else:
+            audio = audio.squeeze(0)
+
+        # Segment the audio
+        segment_samples = segment_length * target_sr
+        overlap_samples = int(segment_samples * overlap)
+        step_samples = segment_samples - overlap_samples
+        num_segments = (int(audio.size(0)) - segment_samples) // step_samples + 1
+
+        segments = []
+        end_sample = 0
+        for i in range(num_segments):
+            start_sample = i * step_samples
+            end_sample = start_sample + segment_samples
+            segments.append(audio[start_sample:end_sample])
+
+        remaining_part = audio[end_sample:]
+        if remaining_part.size(0) >= segment_length * target_sr:
+            segments.append(remaining_part)
+
+        # Stack segments into a tensor
+        segments_tensor = torch.stack(segments)  # Shape: [num_segments, segment_length * sr]
+
+        # Add batch dimension
+        input_values = segments_tensor.unsqueeze(0).to(device)  # Shape: [1, num_segments, seq_length]
+
+        with torch.no_grad():
+            predictions, embeddings = self.speech_only_forward(input_values, return_embeddings=True)
+
+        return {
+            "predictions": predictions.cpu().numpy(),
+            "embeddings": embeddings.cpu().numpy(),
+            "segments_tensor": segments_tensor.cpu().numpy()
+        }
+        
+    def calculate_speech_shap_values(
+        self,
+        audio_path,
+        segment_length=5,
+        overlap=0.2,
+        target_sr=16000,
+        baseline_type='zeros'
+    ):
+        result = self.speech_only_inference(
+            audio_path,
+            segment_length=segment_length,
+            overlap=overlap,
+            target_sr=target_sr,
+            device=self.device
+        )
+
+        segments_tensor = torch.tensor(result["segments_tensor"]).to(self.device)  # Input tensor for SHAP
+        predictions = result["predictions"]
+
+        if baseline_type == 'zeros':
+            baseline_data = torch.zeros_like(segments_tensor)  # Zero baseline
+        elif baseline_type == 'mean':
+            baseline_data = torch.mean(segments_tensor, dim=0, keepdim=True).repeat(
+                segments_tensor.size(0), 1, 1
+            )  # Mean baseline
+
+        baseline_data = baseline_data.unsqueeze(0) if baseline_data.dim() == 2 else baseline_data
+        segments_tensor = segments_tensor.unsqueeze(0) if segments_tensor.dim() == 2 else segments_tensor
+
+        class ModelWrapper(nn.Module):
+            def __init__(self, model):
+                super().__init__()
+                self.model = model
+        
+            def forward(self, x):
+                # Instead of calling self.model.forward(x)
+                return self.model.speech_only_forward(x)
+        
+        explainer = shap.DeepExplainer(ModelWrapper(self), baseline_data)
+
+        shap_values = explainer.shap_values(segments_tensor, check_additivity=False)  # Disable additivity check
+
+        shap_values_aggregated = [shap_val.sum(axis=-1) for shap_val in shap_values]
+
+        return {
+            "shap_values": shap_values,
+            "shap_values_aggregated": shap_values_aggregated,
+            "segments_tensor": segments_tensor.cpu().numpy(),
+            "predictions": predictions
+        }

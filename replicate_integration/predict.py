@@ -1,11 +1,12 @@
+import os
 import torch
-from replicate_integration.tbnet import TBNet, Config
-from cog import BasePredictor, Path, Input, File
+from tbnet import TBNet, Config
+from cog import BasePredictor, Path, Input
  
 class Predictor(BasePredictor):
+        
     def setup(self):
         """Load the model into memory to make running multiple predictions efficient"""
-        
         self.config = Config()
         self.config.seed = 133
         self.config.bs = 4
@@ -24,15 +25,15 @@ class Predictor(BasePredictor):
         self.config.max_num_segments = 7
         
         self.net = TBNet(self.config)
-        self.net.load_state_dict(torch.load("tbnet-best.pt")) # Modify the path if needed
+        self.net.load_state_dict(torch.load("/model_checkpoints/tbnet-best.pt"))
         self.net.eval()
 
 
-
     def predict(self, 
-            audio: File = Input(description="Input Speech"),
+            audio: Path = Input(description="Input Speech"),
             age: float = Input(description="Age"),
             ) -> Path:
         """Run a single prediction on the model"""
+        
         predictions = self.net.inference(audio, age, self.config)
         return predictions

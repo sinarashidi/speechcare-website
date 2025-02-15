@@ -35,6 +35,8 @@ build:
   run:
     - "echo env is ready!"
     - "gdown 1Cixa_7eunClHa35fWF6vxrkmwb87IZhz" # Model checkpoint file
+    - "mkdir -p /model_checkpoints"
+    - "mv tbnet-best.pt /model_checkpoints"
     - "apt update && apt install ffmpeg -y"
 
 

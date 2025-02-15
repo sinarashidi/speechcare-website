@@ -32,20 +32,17 @@
 # # print(tbnet_model.illustrate_shap_values())
 # tbnet_model.calculate_and_visualize_speech_shap(audio, 'result.png')
 
-# import replicate
+import replicate
 
-# with open("amhc.wav", "rb") as audio_file:
-#     # Pass the file object directly to the Replicate API
-#     output = replicate.run(
-#         "neurotechanalytics/speechcare:7074c14f0aadeba240361a372ff58d66407712c72ac1ff4bde5efab3cf82e6a3",
-#         input={
-#             'audio': audio_file,  # File object
-#             'age': 63             # Age input
-#         }
-#     )
-#     print(output)
+with open("amhc.wav", "rb") as audio_file:
+    # Pass the file object directly to the Replicate API
+    output = replicate.run(
+        "neurotechanalytics/speechcare:ad35ccb47bb9999c698d38f19929266824a686dec624f4eef60e93f4a6eccb9e",
+        input={
+            'audio': audio_file,  # File object
+            'age': 63             # Age input
+        }
+    )
+    print(output)
     
-    
-from replicate_integration.predict import Predictor
-
     
