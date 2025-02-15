@@ -13,7 +13,7 @@ def setup_env(config_path):
     with open(config_path) as f:
         config = yaml.safe_load(f)
     os.environ["REPLICATE_API_TOKEN"] = config["replicate_api_token"]
-    repo_path = config["repo_path"]
+    repo_path = config["replicate_model_repo"]
     return repo_path
 
 
