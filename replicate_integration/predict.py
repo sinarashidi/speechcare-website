@@ -1,5 +1,5 @@
 import torch
-from tbnet import TBNet, Config
+from replicate_integration.tbnet import TBNet, Config
 from cog import BasePredictor, Path, Input, File
  
 class Predictor(BasePredictor):

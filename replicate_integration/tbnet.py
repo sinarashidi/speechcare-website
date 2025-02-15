@@ -10,7 +10,7 @@ from transformers import (AutoModel,
                           AutoTokenizer, 
                           AutoModelForSpeechSeq2Seq, 
                           AutoProcessor, pipeline)
-from shap_visualization import text
+from replicate_integration.shap_visualization import text
 
 
 class Config():
