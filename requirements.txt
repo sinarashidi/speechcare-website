@@ -13,3 +13,5 @@ pandas
 shap
 praat-parselmouth
 librosa
+replicate
+cog
