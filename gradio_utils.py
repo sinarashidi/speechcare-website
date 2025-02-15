@@ -46,7 +46,7 @@ def get_text_explanations(audio, age, repo_path):
         gr.HTML(text_shap_html, visible=True),
         gr.update(visible=False), 
     )
-    
+
 
 def get_speech_explanations(audio, age, repo_path):
     with open(audio, "rb") as audio_file:
@@ -64,9 +64,10 @@ def get_speech_explanations(audio, age, repo_path):
     img = Image.open(BytesIO(response.content))
     # Return the image and update the loading indicator
     return (
-        gr.update(img, visible=True), 
+        gr.Image(img, visible=True), 
         gr.update(visible=False)
     )
+
 
 
 def show_loading(audio, age):

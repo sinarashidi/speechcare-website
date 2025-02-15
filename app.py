@@ -63,7 +63,7 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
         height=280,
     )
     output_message_area = gr.HTML("", visible=False)
-    loading_indicator = gr.HTML("Loading...", visible=False)
+    loading_indicator = gr.HTML("Loading...", visible=False, min_height=50)
 
             
     # Explainability Section
@@ -74,14 +74,14 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
             text_expl_btn = gr.Button("Calculate Text SHAP Results", elem_classes=["text-expl-btn"])
         with gr.Column(scale=3):
             text_explanation = gr.HTML("", visible=False)
-            text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False)
+            text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
 
     with gr.Row():
         with gr.Column(scale=1):
             speech_expl_btn = gr.Button("Calculate Speech SHAP Results", elem_classes=["speech-expl-btn"])
         with gr.Column(scale=3):
             speech_explanation = gr.Image(visible=False)
-            speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False)
+            speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False, min_height=50)
         
     predict_button.click(
         fn=show_loading,  # Show loading screen
