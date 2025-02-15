@@ -89,8 +89,8 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
         outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
         queue=False  # Ensure this step is executed immediately
     ).then(
-        fn=update_ui,  # Run the prediction and update the UI
-        inputs=[audio_input, age, replicate_repo_path],
+        fn=lambda audio, age: update_ui(audio, age, replicate_repo_path),
+        inputs=[audio_input, age],
         outputs=[output_banner, output_barChart, output_message_area, loading_indicator]
     )
     
@@ -98,8 +98,8 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
         fn=show_loading_for_explanations,
         outputs=[text_explanation, text_loading_indicator],
     ).then(
-        fn=get_text_explanations,
-        inputs=[audio_input, age, replicate_repo_path],
+        fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path),
+        inputs=[audio_input, age],
         outputs=[text_explanation, text_loading_indicator],
     )
     
@@ -107,10 +107,10 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
         fn=show_loading_for_explanations,
         outputs=[speech_explanation, speech_loading_indicator],
     ).then(
-        fn=get_speech_explanations,
-        inputs=[audio_input, age, replicate_repo_path],
+        fn=lambda audio, age: get_speech_explanations(audio, age, replicate_repo_path),
+        inputs=[audio_input, age],
         outputs=[speech_explanation, speech_loading_indicator],
     )
     
 # Launch the Gradio app
-demo.launch(share=False)
+demo.launch(share=True)
