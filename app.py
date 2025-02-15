@@ -85,12 +85,12 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
         
     predict_button.click(
         fn=show_loading,  # Show loading screen
-        inputs=[audio_input, age, replicate_repo_path],
+        inputs=[audio_input, age],
         outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
         queue=False  # Ensure this step is executed immediately
     ).then(
         fn=update_ui,  # Run the prediction and update the UI
-        inputs=[audio_input, age],
+        inputs=[audio_input, age, replicate_repo_path],
         outputs=[output_banner, output_barChart, output_message_area, loading_indicator]
     )
     
