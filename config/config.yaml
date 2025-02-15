@@ -1,2 +1,2 @@
-# replicate_api_token: r8_O7nxYhRjsHC4gGSMo53PnForFGDwqDb27XOfl
-# replicate_model_repo: neurotechanalytics/speechcare:a9468353cb7e9c47ee573e3212b4427fdab1cef1cc170920e6ed0125dd7c26ab
+replicate_api_token: your_api_token
+replicate_model_repo: your_model_repo
