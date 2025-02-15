@@ -558,7 +558,8 @@ def text(
             color = red_transparent_blue(scaled_value)
             # color = green_white_transparent(scaled_value)
             # ********************************************************************************
-            color = (color[0] * 255, color[1] * 255, color[2] * 255, color[3])
+            # color = (color[0] * 255, color[1] * 255, color[2] * 255, color[3])
+            color = (float(color[0] * 255), float(color[1] * 255), float(color[2] * 255), float(color[3]))
             # '#dddddd' if i == 0 else '#ffffff' border-bottom: {'3px solid #000000' if i == 0 else 'none'};
             out += f"""
 <div style="display: inline; border-bottom: {'3px solid #000000' if i == 0 else 'none'}; background: rgba{color}; border-radius: 3px; padding: 0px" id="_tp_{uuid}_output_{i}_name"
@@ -796,8 +797,9 @@ def text(
         color = red_transparent_blue(scaled_value)
         # color = green_white_transparent(scaled_value)
         # ************************************************************************************************
-        color = (color[0] * 255, color[1] * 255, color[2] * 255, color[3])
-
+        # color = (color[0] * 255, color[1] * 255, color[2] * 255, color[3])
+        color = (float(color[0] * 255), float(color[1] * 255), float(color[2] * 255), float(color[3]))
+        
         # display the labels for the most important words
         label_display = "none"
         wrapper_display = "inline"

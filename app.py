@@ -69,16 +69,16 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
     # Explainability Section
     gr.HTML('<div class="horizontal-line"></div>')
     gr.HTML("Explainability", elem_classes=["section-header"])
-    with gr.Row(min_height=150, elem_classes=["explanation-row"]):
-        with gr.Column(scale=1):
-            text_expl_btn = gr.Button("Calculate Text SHAP Results", elem_classes=["text-expl-btn"])
-        with gr.Column(scale=3):
-            text_explanation = gr.HTML("", visible=False)
-            text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
+    gr.HTML("1. Text Explainability", elem_classes=["instruction"], padding=False)
+    gr.HTML("Text explainability provides insights into the model's decision-making process by highlighting the words that contributed most to the prediction according to their shap values.", elem_classes=["explanation"], padding=False)
 
+    text_expl_btn = gr.Button("Show Text Explainability", elem_classes=["text-expl-btn"])
+    text_explanation = gr.HTML("", visible=False)
+    text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
+    llama_btn = gr.Button("Show LLaMA Interpretation", elem_classes=["llama-btn"], visible=False)
     with gr.Row():
         with gr.Column(scale=1):
-            speech_expl_btn = gr.Button("Calculate Speech SHAP Results", elem_classes=["speech-expl-btn"])
+            speech_expl_btn = gr.Button("Show Speech Explainability", elem_classes=["speech-expl-btn"])
         with gr.Column(scale=3):
             speech_explanation = gr.Image(visible=False)
             speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False, min_height=50)
@@ -100,7 +100,7 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
     ).then(
         fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
-        outputs=[text_explanation, text_loading_indicator],
+        outputs=[text_explanation, text_loading_indicator, llama_btn],
     )
     
     speech_expl_btn.click(

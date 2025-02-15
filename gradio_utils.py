@@ -45,6 +45,7 @@ def get_text_explanations(audio, age, repo_path):
     return (
         gr.HTML(text_shap_html, visible=True),
         gr.update(visible=False), 
+        gr.update(visible=True)
     )
 
 

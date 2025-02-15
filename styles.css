@@ -104,12 +104,17 @@
     width: 100%;
 }
 
-.text-expl-btn, .speech-expl-btn {
-    max-width: 75%;
+.text-expl-btn, .llama-btn {
+    max-width: 20%;
+    align-self: center;
 }
 
 .loading-text {
     font-size: 10px;
+}
+
+.explanation {
+    font-size: 15px;
 }
 
 .explanation-row {
