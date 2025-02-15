@@ -1,7 +1,7 @@
 import torch
 import gradio as gr
 import pandas as pd
-from replicate.tbnet import TBNet, Config
+from replicate_integration.tbnet import TBNet, Config
 from time import sleep
 
 
@@ -106,7 +106,8 @@ def update_ui(audio, age):
         df = probabilities.reset_index().rename(columns={"index": "Label"})
         # Sum of the probabilities of MCI and ADRD
         cog_imp_percent = df.loc[1:, "Probability"].sum() * 100
-        output_message = f"You are {cog_imp_percent:.2f}% in risk of cognitive impairment."
+        output_message = f"You are {cog_imp_percent:.2f}% at risk of cognitive impairment."
+
         return (
             gr.update(visible=True),
             gr.BarPlot(value=df, x="Label", y="Probability", sort=["Healthy", "MCI", "ADRD"], orientation="h", visible=True),
@@ -125,19 +126,19 @@ def update_ui(audio, age):
 ### Page Layout
 #
 with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
-    gr.Markdown("# SpeechCare")
-    gr.Markdown(" ## Cognitive Impairment Detection from Speech + Explainability in both Text and Audio Modalities")
-    gr.HTML('<div class="page-header-line"></div>')
+    gr.HTML("SpeechCare", elem_classes=["page-title"], padding=False)
+    gr.HTML("Cognitive Impairment Detection from Speech + Explainability in both Text and Speech Modalities", elem_classes=["page-subtitle"], padding=False)
+    gr.HTML('<div class="page-header-line"></div>', padding=False)
     gr.HTML("Cognitive Impairment Detection", elem_classes=["section-header"])
     
     with gr.Row():
-        with gr.Column():
-            gr.HTML("1. Enter Your Age", elem_classes=["instruction"], padding=False)
-            age = gr.Textbox(label="Age", placeholder="Enter your age", elem_classes=["age-input"])
         # Choose language
         with gr.Column():
-            gr.HTML("2. Select Your Language", elem_classes=["instruction"], padding=False)
+            gr.HTML("1. Select Your Language", elem_classes=["instruction"], padding=False)
             language = gr.Dropdown(["Select Language", "English", "Spanish"], label="Language", interactive=True, value="Select Language")
+        with gr.Column():
+            gr.HTML("2. Enter Your Age", elem_classes=["instruction"], padding=False)
+            age = gr.Textbox(label="Age", placeholder="Enter your age", elem_classes=["age-input"])
             
     with gr.Column():
         # English instructions when the language is set to English
@@ -156,11 +157,9 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
                                 )
 
     language.change(update_instructions, inputs=language, outputs=[title_display, english_description_display, spanish_text_display, image_display])
-        
-    
+    gr.HTML("4. Record or Upload Audio", elem_classes=["instruction"], padding=False)
     with gr.Row(elem_classes=["audio-input-row"]):
-        with gr.Column():
-            gr.HTML("4. Record or Upload Audio", elem_classes=["instruction"], padding=False)
+        with gr.Column(scale=3):
             audio_input = gr.Audio(
                 label="Audio",
                 type="filepath",
@@ -168,34 +167,41 @@ with gr.Blocks(css_paths='styles.css', theme='ocean') as demo:
                 max_length=31,
                 elem_classes=["audio-input"],
             )
-
     with gr.Row(elem_classes=["predict-row"]):
         predict_button = gr.Button("Predict", elem_classes=["predict-btn"])
 
-    with gr.Row():
-        output_banner = gr.Markdown("## Prediction Results", visible=False)
-        output_barChart = gr.BarPlot(
-            x="Label", 
-            y="Probability",
-            sort=None,
-            orientation="h",
-            visible=False,
-        )
-        output_message_area = gr.HTML("", elem_classes=["output-message"], visible=False)
-        loading_indicator = gr.HTML("<div class=inference-loading>Loading...<img src=\"images/loading.gif\" class=loading-image></div>", visible=False)
+    output_banner = gr.HTML("<h2>Prediction Results</h2>", visible=False, elem_classes=['prediction-banner'])
+    output_barChart = gr.BarPlot(
+        x="Label", 
+        y="Probability",
+        sort=None,
+        orientation="h",
+        visible=False,
+        elem_classes=["output-barchart"],
+        container=False,
+        y_lim=[0.0, 1.0],
+        height=280,
+    )
+    output_message_area = gr.HTML("", visible=False)
+    loading_indicator = gr.HTML("Loading...", visible=False)
 
             
     # Explainability Section
     gr.HTML('<div class="horizontal-line"></div>')
     gr.HTML("Explainability", elem_classes=["section-header"])
-    with gr.Row():
+    with gr.Row(min_height=150, elem_classes=["explanation-row"]):
         with gr.Column(scale=1):
-            text_expl_btn = gr.Button("Text Explanability", elem_classes=["text-expl-btn"])
+            text_expl_btn = gr.Button("Calculate Text SHAP Results", elem_classes=["text-expl-btn"])
         with gr.Column(scale=3):
             text_explanation = gr.HTML("", visible=False)
-            text_loading_indicator = gr.HTML("Loading the text explanations. This make take up to 2 minutes...", visible=False)
-    # Link the button to the prediction function
-        
+            text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False)
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            speech_expl_btn = gr.Button("Calculate Speech SHAP Results", elem_classes=["speech-expl-btn"])
+        with gr.Column(scale=3):
+            speech_explanation = gr.HTML("", visible=False)
+            speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False)
         
     predict_button.click(
         fn=show_loading,  # Show loading screen
