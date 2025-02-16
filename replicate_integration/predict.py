@@ -32,7 +32,8 @@ class Predictor(BasePredictor):
     def predict(self, 
             audio: Path = Input(description="Input Speech"),
             age: float = Input(description="Age"),
-            mode: str = Input(description="Mode")
+            mode: str = Input(description="Mode"),
+            llama_api_key: str = Input(default=None, description="LLaMA API Key")
             ) -> Path | str:
         """Run a single prediction on the model"""
         if mode == "inference":
@@ -43,7 +44,7 @@ class Predictor(BasePredictor):
             return self.net.get_text_shap_results()
         elif mode == "llama":
             predictions = self.net.inference(audio, age, self.config)
-            return self.net.get_llama_interpretation()
+            return self.net.get_llama_interpretation(llama_api_key)
         elif mode == "explain_speech":
             output = self.net.get_speech_shap_results(audio, age, self.config)
             return Path(output)

@@ -25,7 +25,6 @@ class Config():
     mHuBERT = 'utter-project/mHuBERT-147'
     MGTEBASE = 'Alibaba-NLP/gte-multilingual-base'
     WHISPER = "openai/whisper-large-v3-turbo"
-    LLAMA_API_KEY = "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"
 
     def __init__(self):
         return
@@ -66,7 +65,6 @@ class GatingNetwork(nn.Module):
 class TBNet(nn.Module):
     def __init__(self, config):
         super(TBNet, self).__init__()
-        self.config = config
         self.predicted_label = None
         self.transcription = None
         
@@ -444,7 +442,7 @@ class TBNet(nn.Module):
     
         return shap_dict
     
-    def get_llama_interpretation(self):
+    def get_llama_interpretation(self, llama_api_key):
         shap_dict = self.get_text_shap_dict()
         
         message = f"""
@@ -516,7 +514,7 @@ class TBNet(nn.Module):
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
-                "Authorization": f"Bearer {self.config.LLAMA_API_KEY}",
+                "Authorization": f"Bearer {llama_api_key}",
                 "Content-Type": "application/json",
             },
             data=json.dumps({
