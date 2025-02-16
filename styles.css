@@ -117,6 +117,11 @@
     font-size: 15px;
 }
 
+.text-explanation {
+    color: black;
+    background-color: white;
+}
+
 .explanation-row {
     margin-top: 20px;
 }

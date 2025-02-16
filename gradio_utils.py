@@ -47,6 +47,22 @@ def get_text_explanations(audio, age, repo_path):
         gr.update(visible=False), 
         gr.update(visible=True)
     )
+    
+    
+def get_llama_explanations(audio, age, repo_path):
+    with open(audio, "rb") as audio_file:
+        llama_interprets = replicate.run(
+            repo_path,
+            input={
+                "age": int(age),
+                "mode": "llama",
+                "audio": audio_file,
+            }
+        )
+    return (
+        gr.Markdown(llama_interprets, visible=True),
+        gr.update(visible=False)
+    )
 
 
 def get_speech_explanations(audio, age, repo_path):

@@ -73,21 +73,35 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
     gr.HTML("Text explainability provides insights into the model's decision-making process by highlighting the words that contributed most to the prediction according to their shap values.", elem_classes=["explanation"], padding=False)
 
     text_expl_btn = gr.Button("Show Text Explainability", elem_classes=["text-expl-btn"])
-    text_explanation = gr.HTML("", visible=False)
+    text_explanation = gr.HTML("", visible=False, elem_classes=['text-explanation'])
     text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
+
     llama_btn = gr.Button("Show LLaMA Interpretation", elem_classes=["llama-btn"], visible=False)
-    with gr.Row():
-        with gr.Column(scale=1):
-            speech_expl_btn = gr.Button("Show Speech Explainability", elem_classes=["speech-expl-btn"])
-        with gr.Column(scale=3):
-            speech_explanation = gr.Image(visible=False)
-            speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False, min_height=50)
-        
-    predict_button.click(
-        fn=show_loading,  # Show loading screen
+    llama_explanation = gr.HTML("", visible=False, elem_classes=['llama-explanation'])
+    llama_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
+
+    gr.HTML("2. Speech Explainability", elem_classes=["instruction"], padding=False)
+    gr.HTML("Speech explainability provides insights into the model's decision-making process by adjusting the intensity of the spectrogram based on the shap values of the model for every 0.3 second chunk of the audio.", elem_classes=["explanation"], padding=False)
+    speech_expl_btn = gr.Button("Show Speech Explainability", elem_classes=["speech-expl-btn"])
+    speech_explanation = gr.Image(visible=False)
+    speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False, min_height=50)
+
+    # Event Handlers
+    audio_input.stop_recording(
+        fn=show_loading,
         inputs=[audio_input, age],
         outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
-        queue=False  # Ensure this step is executed immediately
+        queue=False 
+    ).then(
+        fn=lambda audio, age: update_ui(audio, age, replicate_repo_path),
+        inputs=[audio_input, age],
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator]
+        )
+    predict_button.click(
+        fn=show_loading,
+        inputs=[audio_input, age],
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
+        queue=False
     ).then(
         fn=lambda audio, age: update_ui(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
@@ -102,7 +116,14 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
         inputs=[audio_input, age],
         outputs=[text_explanation, text_loading_indicator, llama_btn],
     )
-    
+    llama_btn.click(
+        fn=show_loading_for_explanations,
+        outputs=[llama_explanation, llama_loading_indicator],
+    ).then(
+        fn=lambda audio, age: get_llama_explanations(audio, age, replicate_repo_path),
+        inputs=[audio_input, age],
+        outputs=[llama_explanation, llama_loading_indicator],
+    )
     speech_expl_btn.click(
         fn=show_loading_for_explanations,
         outputs=[speech_explanation, speech_loading_indicator],

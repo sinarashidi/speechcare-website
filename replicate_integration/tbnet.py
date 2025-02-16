@@ -1,4 +1,6 @@
 import os
+import json
+import requests
 import shap
 import numpy as np
 import torch
@@ -12,7 +14,7 @@ from transformers import (AutoModel,
                           AutoTokenizer, 
                           AutoModelForSpeechSeq2Seq, 
                           AutoProcessor, pipeline)
-from text_shap_visualization import text
+from text_shap_visualization import text, unpack_shap_explanation_contents, process_shap_values
 from speech_shap_visualization import visualize_shap_spectrogram, frequency_shannon_entropy
 
 
@@ -23,6 +25,7 @@ class Config():
     mHuBERT = 'utter-project/mHuBERT-147'
     MGTEBASE = 'Alibaba-NLP/gte-multilingual-base'
     WHISPER = "openai/whisper-large-v3-turbo"
+    LLAMA_API_KEY = "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"
 
     def __init__(self):
         return
@@ -63,7 +66,7 @@ class GatingNetwork(nn.Module):
 class TBNet(nn.Module):
     def __init__(self, config):
         super(TBNet, self).__init__()
-        # set_seed(config.seed)
+        self.config = config
         self.predicted_label = None
         self.transcription = None
         
@@ -382,7 +385,153 @@ class TBNet(nn.Module):
         print('Values explained...')
         shap_html_code = text(shap_values[:,:,self.predicted_label], display=False)
         return shap_html_code
+
+    def get_text_shap_dict(self, grouping_threshold=0.01, separator=" "):
+        """
+        Returns a dictionary of token -> SHAP value for the model's current transcription
+        and predicted label.
     
+        Parameters
+        ----------
+        grouping_threshold : float
+            Merges tokens into a single 'group' if the interaction level is high compared
+            to this threshold. A value near 0.01 is common for minimal grouping.
+        separator : str
+            Used to join subwords if they are merged due to hierarchical grouping. Typically
+            ' ' for normal words, or '' if using GPT-style 'Ġ' tokens.
+    
+        Returns
+        -------
+        dict
+            A dictionary mapping each (possibly merged) token to its SHAP value.
+        """
+    
+        # If there's no transcription yet, run inference or make sure self.transcription is set
+        if not self.transcription:
+            raise ValueError("self.transcription is empty. Run inference(...) first or set it manually.")
+    
+        # Get SHAP values for the text (this uses calculate_text_shap_values under the hood)
+        input_text = [str(self.transcription)]
+        shap_explanations = self.text_explainer(input_text)  
+        # shap_explanations typically has shape [batch, tokens, classes].
+        # We'll pick the first example (index 0), then the predicted_label dimension.
+        # i.e. shap_explanations[0, :, self.predicted_label].
+    
+        # Make sure we handle the predicted label dimension safely
+        if self.predicted_label is None:
+            raise ValueError("self.predicted_label is None. Inference may not have been run.")
+    
+        # The snippet below extracts the single (row, class) explanation:
+        single_shap_values = shap_explanations[0, :, self.predicted_label]
+        # 'single_shap_values' is now a shap.Explanation object representing the token-level SHAP
+        # for whichever label is in self.predicted_label.
+    
+        # Decompose the hierarchical SHAP values into tokens/values
+        values, clustering = unpack_shap_explanation_contents(single_shap_values)
+        tokens, merged_values, group_sizes = process_shap_values(
+            single_shap_values.data,
+            values,
+            grouping_threshold=grouping_threshold,
+            separator=separator,
+            clustering=clustering
+        )
+    
+        # Build the dictionary: token -> SHAP value
+        shap_dict = {}
+        for token, val in zip(tokens, merged_values):
+            # It’s good practice to cast the SHAP value to a plain float
+            shap_dict[token] = float(val)
+    
+        return shap_dict
+    
+    def get_llama_interpretation(self):
+        shap_dict = self.get_text_shap_dict()
+        
+        message = f"""
+            You are a specialized language model trained to detect linguistic cues of cognitive impairment. You will receive:
+            1) A set of linguistic features to consider.
+            2) A text passage to analyze.
+            3) Token-level SHAP values from a pre-trained model.
+
+            Your task is to:
+            A. Identify which tokens are most influential in the classification, based on SHAP values.
+            B. Map each influential token to one or more linguistic features (e.g., lexical richness, syntactic complexity).
+            C. Explain how the token and its context may indicate healthy cognition or cognitive impairment.
+
+            Please follow the steps below and provide a structured analysis.
+            ---
+            Linguistic Features to Consider:
+            • **Lexical Richness**: Unusual or varied vocabulary, overuse of vague terms (e.g., “thing,” “stuff”).
+            • **Syntactic Complexity**: Simple vs. complex sentence constructions, grammatical errors.
+            • **Sentence Length and Structure**: Fragmented vs. compound/complex sentences.
+            • **Repetition**: Repeated words, phrases, or clauses.
+            • **Disfluencies and Fillers**: Terms like “um,” “uh,” “like.”
+            • **Semantic Coherence and Content**: Logical flow of ideas, clarity of meaning.
+            • **Additional Feature (XXX)**: Placeholder for any extra marker (e.g., specialized domain terms).
+            ---
+            Text to Analyze:
+            {self.transcription}
+            ---
+            Token-level SHAP Values:
+            {shap_dict}
+            ---
+            Analysis Format:
+            1) **Token-Level Analysis**: For each token with a significant |SHAP| value, specify:
+            - Token
+            - SHAP Value
+            - Linguistic Feature(s) Involved
+            - Brief Interpretation
+            2) **Overall Summary**: Synthesize the significance of these tokens/features to explain how they collectively point to healthy cognition or potential cognitive impairment.
+            ---
+            """
+        output_format = """
+            Example Output Format:
+            {
+            "Analysis": [
+                {
+                "Token": "um",
+                "SHAP_Value": -0.87,
+                "Linguistic_Feature": "Disfluency",
+                "Interpretation": "Filler word commonly seen in cognitive impairment contexts."
+                },
+                {
+                "Token": "patient",
+                "SHAP_Value": 0.65,
+                "Linguistic_Feature": "Lexical Richness",
+                "Interpretation": "Use of domain-specific term suggests context awareness."
+                },
+                ...
+            ],
+
+            "Overall_Summary": "Multiple disfluencies and repetitive fragments are indicative of possible cognitive impairment."
+            }
+            ---
+            Constraints and Guidelines:
+            - Rely only on the provided text and SHAP values; do not infer from external or hidden knowledge.
+            - Tie each token with high |SHAP| back to a specific linguistic feature and explain its clinical relevance."""
+
+        message += output_format
+
+        print("Getting LLaMA interpretation...")
+        response = requests.post(
+            url="https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.config.LLAMA_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps({
+                "model": "meta-llama/llama-3.3-70b-instruct:free",
+                "messages": [
+                {
+                    "role": "user",
+                    "content": message
+                }
+                ],
+            })
+            )
+
+        return response.json()['choices'][0]['message']['content']
+
     def speech_only_forward(self, input_values, return_embeddings=False):
         """
         Forward method for TBNet model.
