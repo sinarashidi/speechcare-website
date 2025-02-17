@@ -90,47 +90,47 @@ with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo
     audio_input.stop_recording(
         fn=show_loading,
         inputs=[audio_input, age],
-        outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator, predict_button],
         queue=False 
     ).then(
         fn=lambda audio, age: update_ui(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
-        outputs=[output_banner, output_barChart, output_message_area, loading_indicator]
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator, predict_button]
         )
     predict_button.click(
         fn=show_loading,
         inputs=[audio_input, age],
-        outputs=[output_banner, output_barChart, output_message_area, loading_indicator],
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator, predict_button],
         queue=False
     ).then(
         fn=lambda audio, age: update_ui(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
-        outputs=[output_banner, output_barChart, output_message_area, loading_indicator]
+        outputs=[output_banner, output_barChart, output_message_area, loading_indicator, predict_button]
     )
     
     text_expl_btn.click(
         fn=show_loading_for_explanations,
-        outputs=[text_explanation, text_loading_indicator],
+        outputs=[text_explanation, text_loading_indicator, text_expl_btn],
     ).then(
         fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
-        outputs=[text_explanation, text_loading_indicator, llama_btn],
+        outputs=[text_explanation, text_loading_indicator, llama_btn, text_expl_btn],
     )
     llama_btn.click(
         fn=show_loading_for_explanations,
-        outputs=[llama_explanation, llama_loading_indicator],
+        outputs=[llama_explanation, llama_loading_indicator, llama_btn],
     ).then(
         fn=lambda audio, age: get_llama_explanations(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
-        outputs=[llama_explanation, llama_loading_indicator],
+        outputs=[llama_explanation, llama_loading_indicator, llama_btn],
     )
     speech_expl_btn.click(
         fn=show_loading_for_explanations,
-        outputs=[speech_explanation, speech_loading_indicator],
+        outputs=[speech_explanation, speech_loading_indicator, speech_expl_btn],
     ).then(
         fn=lambda audio, age: get_speech_explanations(audio, age, replicate_repo_path),
         inputs=[audio_input, age],
-        outputs=[speech_explanation, speech_loading_indicator],
+        outputs=[speech_explanation, speech_loading_indicator, speech_expl_btn],
     )
     
 # Launch the Gradio app

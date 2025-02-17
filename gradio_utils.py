@@ -45,7 +45,8 @@ def get_text_explanations(audio, age, repo_path):
     return (
         gr.HTML(text_shap_html, visible=True),
         gr.update(visible=False), 
-        gr.update(visible=True)
+        gr.update(visible=True),
+        gr.update(visible=True),
     )
     
     
@@ -61,7 +62,8 @@ def get_llama_explanations(audio, age, repo_path):
         )
     return (
         gr.Markdown(llama_interprets, visible=True),
-        gr.update(visible=False)
+        gr.update(visible=False),
+        gr.update(visible=True),
     )
 
 
@@ -82,7 +84,8 @@ def get_speech_explanations(audio, age, repo_path):
     # Return the image and update the loading indicator
     return (
         gr.Image(img, visible=True), 
-        gr.update(visible=False)
+        gr.update(visible=False),
+        gr.update(visible=True),
     )
 
 
@@ -93,21 +96,24 @@ def show_loading(audio, age):
             gr.update(visible=False),
             gr.BarPlot(visible=False),
             gr.HTML(visible=False),
-            gr.update(visible=False)
+            gr.update(visible=False),
+            gr.update(visible=True),
         )
 
     return (
         gr.update(visible=False),  # Hide output_banner
         gr.update(visible=False),  # Hide output_barChart
         gr.update(visible=False),  # Hide output_message_area
-        gr.update(visible=True)
+        gr.update(visible=True),
+        gr.update(visible=False),
     )
 
     
 def show_loading_for_explanations():
     return (
         gr.update(visible=False),
-        gr.update(visible=True)
+        gr.update(visible=True),
+        gr.update(visible=False),
     )
 
 
@@ -143,7 +149,8 @@ def update_ui(audio, age, repo_path):
             gr.update(visible=False),
             gr.BarPlot(visible=False),
             gr.HTML("Please enter both age and audio", visible=True, elem_classes=["error-message"]),
-            gr.update(visible=False)
+            gr.update(visible=False),
+            gr.update(visible=True),
         )
 
     try:
@@ -157,12 +164,14 @@ def update_ui(audio, age, repo_path):
             gr.update(visible=True),
             gr.BarPlot(value=df, x="Label", y="Probability", sort=["Healthy", "MCI", "ADRD"], orientation="h", visible=True),
             gr.HTML(output_message, elem_classes=["output-message"] , visible=True),
-            gr.update(visible=False)
+            gr.update(visible=False),
+            gr.update(visible=True),
         )
     except Exception as e:
         return (
             gr.update(visible=False),
             gr.BarPlot(visible=False),
             gr.HTML(str(e), visible=True, elem_classes=["error-message"]),
-            gr.update(visible=False)
+            gr.update(visible=False),
+            gr.update(visible=True),
         )

@@ -104,7 +104,7 @@
     width: 100%;
 }
 
-.text-expl-btn, .llama-btn {
+.text-expl-btn, .llama-btn, .speech-expl-btn {
     max-width: 20%;
     align-self: center;
 }
