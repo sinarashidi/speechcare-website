@@ -104,6 +104,12 @@
     width: 100%;
 }
 
+.note {
+    font-size: 15px;
+    font-style: italic;
+    color: rgb(255, 39, 39);
+}   
+
 .text-expl-btn, .llama-btn, .speech-expl-btn {
     max-width: 20%;
     align-self: center;

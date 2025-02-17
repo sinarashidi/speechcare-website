@@ -51,7 +51,7 @@ def get_text_explanations(audio, age, repo_path):
     )
     
     
-def get_llama_explanations(audio, age, repo_path):
+def get_llama_explanations(audio, age, repo_path, llama_api_key):
     with open(audio, "rb") as audio_file:
         llama_interprets = replicate.run(
             repo_path,
@@ -59,6 +59,7 @@ def get_llama_explanations(audio, age, repo_path):
                 "age": int(age),
                 "mode": "llama",
                 "audio": audio_file,
+                "llama_api_key": llama_api_key,
             }
         )
     return (
