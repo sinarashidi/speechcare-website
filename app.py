@@ -2,7 +2,7 @@ import gradio as gr
 from gradio_utils import *
 
 
-replicate_repo_path = setup_env("config/config.yaml")
+replicate_repo_path, llama_api_key = setup_env("config/config.yaml")
 
 # Main Page Layout
 with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo:

@@ -14,7 +14,8 @@ def setup_env(config_path):
         config = yaml.safe_load(f)
     os.environ["REPLICATE_API_TOKEN"] = config["replicate_api_token"]
     repo_path = config["replicate_model_repo"]
-    return repo_path
+    llama_api_key = config["llama_api_key"]
+    return repo_path, llama_api_key
 
 
 def predict(audio, age, repo_path):
