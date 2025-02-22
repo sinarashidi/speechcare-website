@@ -39,7 +39,6 @@ def get_text_explanations(audio, age, repo_path, llama_api_key):
             gr.HTML("Please enter both age and audio", visible=True, elem_classes=["error-message"]),
             gr.update(visible=False),
             gr.update(visible=False),
-            gr.update(visible=False),
             gr.update(visible=True),
         )
 
@@ -53,11 +52,13 @@ def get_text_explanations(audio, age, repo_path, llama_api_key):
             "llama_api_key": llama_api_key,
             }
         )
+    
+    llama_output = llama_response.split('[sep_token]')[1].split(':')[1].strip()
     return (
         gr.HTML(text_shap_html, visible=True),
-        gr.Markdown(llama_response, visible=False),
+        gr.HTML("LLaMA 3.3 Interpretation", visible=True, elem_classes=["instruction"], padding=False),
+        gr.Markdown(llama_output, visible=True, elem_classes=['llama-explanation']),
         gr.update(visible=False), 
-        gr.update(visible=True),
         gr.update(visible=True),
     )
     
@@ -65,14 +66,13 @@ def get_text_explanations(audio, age, repo_path, llama_api_key):
 def get_llama_explanations():
     return (
         gr.update(visible=True),
-        gr.update(visible=False),
-        gr.update(visible=True),
     )
 
 
 def get_speech_explanations(audio, age, repo_path):
     if not audio or age.strip() == "":
         return (
+            gr.update(visible=False),
             gr.HTML("Please enter both age and audio", visible=True, elem_classes=["error-message"]),
             gr.update(visible=False),
             gr.update(visible=True),
@@ -93,11 +93,11 @@ def get_speech_explanations(audio, age, repo_path):
     img = Image.open(BytesIO(response.content))
     # Return the image and update the loading indicator
     return (
-        gr.Image(img, visible=True), 
+        gr.Image(img, visible=True),
+        gr.update(visible=False),
         gr.update(visible=False),
         gr.update(visible=True),
     )
-
 
 
 def show_loading(audio, age):
@@ -119,7 +119,13 @@ def show_loading(audio, age):
     )
 
     
-def show_loading_for_explanations():
+def show_loading_for_explanations(audio, age):
+    if not audio or age.strip() == "":
+        return (
+            gr.HTML("Please enter both age and audio", visible=True, elem_classes=["error-message"]),
+            gr.update(visible=False),
+            gr.update(visible=True),
+        )
     return (
         gr.update(visible=False),
         gr.update(visible=True),

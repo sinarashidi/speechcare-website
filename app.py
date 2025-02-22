@@ -75,15 +75,14 @@ def create_gradio_interface(config_path="config/config.yaml"):
         text_expl_btn = gr.Button("Show Text Explainability", elem_classes=["text-expl-btn"])
         text_explanation = gr.HTML("", visible=False, elem_classes=['text-explanation'])
         text_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
-
-        llama_btn = gr.Button("Show LLaMA Interpretation", elem_classes=["llama-btn"], visible=False)
+        llama_title = gr.HTML(visible=False)
         llama_explanation = gr.Markdown("", visible=False, elem_classes=['llama-explanation'])
-        llama_loading_indicator = gr.HTML("Loading the text explanations. This may take up to 2 minutes...", visible=False, min_height=50)
 
         gr.HTML("2. Speech Explainability", elem_classes=["instruction"], padding=False)
         gr.HTML("Speech explainability provides insights into the model's decision-making process by adjusting the intensity of the spectrogram based on the shap values of the model for every 0.3-second chunk of the audio.", elem_classes=["explanation"], padding=False)
         speech_expl_btn = gr.Button("Show Speech Explainability", elem_classes=["speech-expl-btn"])
         speech_explanation = gr.Image(visible=False)
+        speech_expl_error = gr.HTML(visible=False)
         speech_loading_indicator = gr.HTML("Loading the speech explanations. This make take several seconds...", visible=False, min_height=50)
 
         # Event Handlers
@@ -114,14 +113,7 @@ def create_gradio_interface(config_path="config/config.yaml"):
         ).then(
             fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path, llama_api_key),
             inputs=[audio_input, age],
-            outputs=[text_explanation, llama_explanation, text_loading_indicator, llama_btn, text_expl_btn],
-        )
-        llama_btn.click(
-            fn=show_loading_for_explanations,
-            outputs=[llama_explanation, llama_loading_indicator, llama_btn],
-        ).then(
-            fn=get_llama_explanations,
-            outputs=[llama_explanation, llama_loading_indicator, llama_btn],
+            outputs=[text_explanation, llama_title, llama_explanation, text_loading_indicator, text_expl_btn],
         )
         speech_expl_btn.click(
             fn=show_loading_for_explanations,
@@ -129,7 +121,7 @@ def create_gradio_interface(config_path="config/config.yaml"):
         ).then(
             fn=lambda audio, age: get_speech_explanations(audio, age, replicate_repo_path),
             inputs=[audio_input, age],
-            outputs=[speech_explanation, speech_loading_indicator, speech_expl_btn],
+            outputs=[speech_explanation, speech_expl_error, speech_loading_indicator, speech_expl_btn],
         )
     
     return demo
