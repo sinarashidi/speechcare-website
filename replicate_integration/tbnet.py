@@ -500,13 +500,16 @@ class TBNet(nn.Module):
                 },
                 ...
             ],
-
+            [sep_token]
             "Overall_Summary": "Multiple disfluencies and repetitive fragments are indicative of possible cognitive impairment."
+            [sep_token]
             }
             ---
             Constraints and Guidelines:
             - Rely only on the provided text and SHAP values; do not infer from external or hidden knowledge.
-            - Tie each token with high |SHAP| back to a specific linguistic feature and explain its clinical relevance."""
+            - Tie each token with high |SHAP| back to a specific linguistic feature and explain its clinical relevance.
+            - Put separator token [sep_token] before and after the 'Overall_Summary' in the output.
+            """
 
         message += output_format
 
@@ -528,7 +531,7 @@ class TBNet(nn.Module):
             })
             )
 
-        return response.json()['choices'][0]['message']['content']
+        return self.get_text_shap_results(), response.json()['choices'][0]['message']['content']
 
     def speech_only_forward(self, input_values, return_embeddings=False):
         """

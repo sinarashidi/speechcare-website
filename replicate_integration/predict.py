@@ -41,9 +41,6 @@ class Predictor(BasePredictor):
             return predictions
         elif mode == "explain_text":
             predictions = self.net.inference(audio, age, self.config)
-            return self.net.get_text_shap_results()
-        elif mode == "llama":
-            predictions = self.net.inference(audio, age, self.config)
             return self.net.get_llama_interpretation(llama_api_key)
         elif mode == "explain_speech":
             output = self.net.get_speech_shap_results(audio, age, self.config)

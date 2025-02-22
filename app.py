@@ -114,7 +114,7 @@ def create_gradio_interface(config_path="config/config.yaml"):
         ).then(
             fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path),
             inputs=[audio_input, age],
-            outputs=[text_explanation, text_loading_indicator, llama_btn, text_expl_btn],
+            outputs=[text_explanation, llama_explanation, text_loading_indicator, llama_btn, text_expl_btn],
         )
         llama_btn.click(
             fn=show_loading_for_explanations,

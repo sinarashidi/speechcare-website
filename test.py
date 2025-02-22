@@ -106,13 +106,16 @@ Example Output Format:
     },
     ...
   ],
-
+  [sep_token]
   "Overall_Summary": "Multiple disfluencies and repetitive fragments are indicative of possible cognitive impairment."
+  [sep_token]
 }
 ---
 Constraints and Guidelines:
 - Rely only on the provided text and SHAP values; do not infer from external or hidden knowledge.
-- Tie each token with high |SHAP| back to a specific linguistic feature and explain its clinical relevance."""
+- Tie each token with high |SHAP| back to a specific linguistic feature and explain its clinical relevance.
+- Put separator token [sep_token] before and after the 'Overall_Summary' in the output.
+"""
 
 
 message += output_format
@@ -120,7 +123,7 @@ message += output_format
 response = requests.post(
   url="https://openrouter.ai/api/v1/chat/completions",
   headers={
-    "Authorization": "Bearer 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",
+    "Authorization": "Bearer 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",
     "Content-Type": "application/json",
   },
   data=json.dumps({
@@ -135,4 +138,12 @@ response = requests.post(
   })
 )
 
-print(response.json())
+r = response.json()['choices'][0]['message']['content']
+
+with open("test.txt", 'w') as f:
+  f.write(r)
+  
+with open('test.txt', 'a') as f:
+  summary = r.split('[sep_token]')[1].split(':')[1].strip()
+  f.write('\n\n\n')
+  f.write(summary)
