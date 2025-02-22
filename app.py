@@ -6,8 +6,8 @@ def create_gradio_interface(config_path="config/config.yaml"):
 
     replicate_repo_path, llama_api_key = setup_env(config_path)
     # Main Page Layout
-    with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar') as demo:
-        gr.HTML("SpeechCare", elem_classes=["page-title"], padding=False)
+    with gr.Blocks(css_paths='styles.css', theme='ParityError/Interstellar', title="SpeechCARE") as demo:
+        gr.HTML("SpeechCARE", elem_classes=["page-title"], padding=False)
         gr.HTML("Cognitive Impairment Detection from Speech + Explainability in both Text and Speech Modalities", elem_classes=["page-subtitle"], padding=False)
         gr.HTML('<div class="page-header-line"></div>', padding=False)
         gr.HTML("Cognitive Impairment Detection", elem_classes=["section-header"])

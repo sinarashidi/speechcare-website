@@ -34,6 +34,15 @@ def predict(audio, age, repo_path):
 
 
 def get_text_explanations(audio, age, repo_path, llama_api_key):
+    if not audio or age.strip() == "":
+        return (
+            gr.HTML("Please enter both age and audio", visible=True, elem_classes=["error-message"]),
+            gr.update(visible=False),
+            gr.update(visible=False),
+            gr.update(visible=False),
+            gr.update(visible=True),
+        )
+
     with open(audio, "rb") as audio_file:
         text_shap_html, llama_response = replicate.run(
         repo_path,
@@ -62,6 +71,13 @@ def get_llama_explanations():
 
 
 def get_speech_explanations(audio, age, repo_path):
+    if not audio or age.strip() == "":
+        return (
+            gr.HTML("Please enter both age and audio", visible=True, elem_classes=["error-message"]),
+            gr.update(visible=False),
+            gr.update(visible=True),
+        )
+
     with open(audio, "rb") as audio_file:
         image_url = replicate.run(
             repo_path,

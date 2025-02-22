@@ -530,7 +530,7 @@ class TBNet(nn.Module):
                 ],
             })
             )
-
+        print(response.json())
         shap_html_code = text(shap_values[:,:,self.predicted_label], display=False)
         return shap_html_code, response.json()['choices'][0]['message']['content']
 
