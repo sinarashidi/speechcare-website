@@ -33,7 +33,7 @@ def predict(audio, age, repo_path):
     return label, output
 
 
-def get_text_explanations(audio, age, repo_path):
+def get_text_explanations(audio, age, repo_path, llama_api_key):
     with open(audio, "rb") as audio_file:
         text_shap_html, llama_response = replicate.run(
         repo_path,
@@ -41,6 +41,7 @@ def get_text_explanations(audio, age, repo_path):
             "age": int(age),
             "mode": "explain_text",
             "audio": audio_file,
+            "llama_api_key": llama_api_key,
             }
         )
     return (
@@ -52,17 +53,7 @@ def get_text_explanations(audio, age, repo_path):
     )
     
     
-def get_llama_explanations(audio, age, repo_path, llama_api_key):
-    # with open(audio, "rb") as audio_file:
-    #     llama_interprets = replicate.run(
-    #         repo_path,
-    #         input={
-    #             "age": int(age),
-    #             "mode": "llama",
-    #             "audio": audio_file,
-    #             "llama_api_key": llama_api_key,
-    #         }
-    #     )
+def get_llama_explanations():
     return (
         gr.update(visible=True),
         gr.update(visible=False),

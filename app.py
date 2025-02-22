@@ -112,7 +112,7 @@ def create_gradio_interface(config_path="config/config.yaml"):
             fn=show_loading_for_explanations,
             outputs=[text_explanation, text_loading_indicator, text_expl_btn],
         ).then(
-            fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path),
+            fn=lambda audio, age: get_text_explanations(audio, age, replicate_repo_path, llama_api_key),
             inputs=[audio_input, age],
             outputs=[text_explanation, llama_explanation, text_loading_indicator, llama_btn, text_expl_btn],
         )
@@ -120,8 +120,7 @@ def create_gradio_interface(config_path="config/config.yaml"):
             fn=show_loading_for_explanations,
             outputs=[llama_explanation, llama_loading_indicator, llama_btn],
         ).then(
-            fn=lambda audio, age: get_llama_explanations(audio, age, replicate_repo_path, llama_api_key),
-            inputs=[audio_input, age],
+            fn=get_llama_explanations,
             outputs=[llama_explanation, llama_loading_indicator, llama_btn],
         )
         speech_expl_btn.click(
