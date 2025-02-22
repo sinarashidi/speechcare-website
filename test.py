@@ -123,7 +123,7 @@ message += output_format
 response = requests.post(
   url="https://openrouter.ai/api/v1/chat/completions",
   headers={
-    "Authorization": "Bearer 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",
+    "Authorization": "Bearer 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",
     "Content-Type": "application/json",
   },
   data=json.dumps({
@@ -138,6 +138,7 @@ response = requests.post(
   })
 )
 
+print(response.json())
 r = response.json()['choices'][0]['message']['content']
 
 with open("test.txt", 'w') as f:

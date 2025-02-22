@@ -440,10 +440,10 @@ class TBNet(nn.Module):
             # It’s good practice to cast the SHAP value to a plain float
             shap_dict[token] = float(val)
     
-        return shap_dict
+        return shap_dict, shap_explanations
     
     def get_llama_interpretation(self, llama_api_key):
-        shap_dict = self.get_text_shap_dict()
+        shap_dict, shap_values = self.get_text_shap_dict()
         
         message = f"""
             You are a specialized language model trained to detect linguistic cues of cognitive impairment. You will receive:
@@ -513,7 +513,7 @@ class TBNet(nn.Module):
 
         message += output_format
 
-        print("Getting LLaMA interpretation...")
+        print(f"Getting LLaMA interpretation with api key: {llama_api_key}")
         response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers={
@@ -531,7 +531,8 @@ class TBNet(nn.Module):
             })
             )
 
-        return self.get_text_shap_results(), response.json()['choices'][0]['message']['content']
+        shap_html_code = text(shap_values[:,:,self.predicted_label], display=False)
+        return shap_html_code, response.json()['choices'][0]['message']['content']
 
     def speech_only_forward(self, input_values, return_embeddings=False):
         """
