@@ -128,6 +128,8 @@ def visualize_shap_spectrogram(
         folder_path = os.path.dirname(fig_save_path)
         os.makedirs(folder_path, exist_ok=True)
         plt.savefig(fig_save_path, dpi=600, bbox_inches="tight")
+        
+    return modified_log_S
 
 def moving_average(data, window_size=5):
     return np.convolve(data, np.ones(window_size) / window_size, mode='valid')

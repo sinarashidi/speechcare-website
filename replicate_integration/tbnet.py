@@ -732,3 +732,49 @@ class TBNet(nn.Module):
         fig_save_path = f"speech_shap_{os.path.basename(audio_path)}.png"
         plt.savefig(fig_save_path, dpi=600, bbox_inches="tight", transparent=True)
         return fig_save_path
+    
+    def get_speech_spectrogram(self,
+        audio_path,
+        demography_info,
+        config,
+        frame_duration=0.3,
+        formants_to_plot=["F0", "F3"],
+        segment_length=5,
+        overlap=0.2,
+        target_sr=16000,
+        baseline_type='zeros'
+    ):
+        """
+        Calculates SHAP values for the given audio file, then calculates the modified 
+        spectrogram and frequency shannon entropy and returns them.
+        """
+        audio_path = str(audio_path)
+        audio_label = self.inference(audio_path, demography_info, config)[0]
+
+        shap_results = self.calculate_speech_shap_values(
+            audio_path,
+            segment_length=segment_length,
+            overlap=overlap,
+            target_sr=target_sr,
+            baseline_type=baseline_type,
+        )
+        shap_values = shap_results["shap_values"]
+
+        modified_spectrogram = visualize_shap_spectrogram(
+            audio_path,
+            shap_values,
+            audio_label,
+            sr=target_sr,
+            segment_length=segment_length,
+            overlap=overlap,
+            merge_frame_duration=frame_duration,
+            formants_to_plot=formants_to_plot,
+            fig_save_path=None,
+        )
+
+        freq_shann_ent = frequency_shannon_entropy(
+            audio_path,
+            smooth_window=50
+        )
+
+        return modified_spectrogram, freq_shann_ent

@@ -1,3 +1,7 @@
 replicate_api_token: your_api_token
 replicate_model_repo: your_model_repo
 llama_api_key: your_llama_api_key
+
+replicate_api_token: r8_YI9a3ZWxUFkYPiEIQwvDm1hFGFS1qLn3IgV3z
+replicate_model_repo: neurotechanalytics/speechcare:49e0fd807371cfe71144ccc9aedad00bc40e48e36dfdec158a06660be40da400
+llama_api_key: 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
